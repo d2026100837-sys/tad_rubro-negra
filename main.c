@@ -1,47 +1,70 @@
-#include <stdlib.h>
+/*
+ * Programa principal para testar a Árvore Rubro-Negra.
+ *
+ * Compatível com os arquivos:
+ * - arvore_rubro_negra_pt.c
+ * - arvore_rubro_negra.h
+ */
+
 #include <stdio.h>
-#include <time.h>
-#include "rbt.h"
+#include "arvore_rubro_negra.h"
 
-#define MAX 10
-
-int main() {
+int main(void) {
     TNoRB *arvore = NULL;
-
-    int opc = -1, flag = 1, n, rn;
-    
+    int opcao = -1;
+    int elemento = 0;
 
     do {
-        printf("1 - Inserir elemento;\n2 - Remover elemento;\n3 - Ver árvore;\n4 - Sair\n");
-        scanf("%d", &opc);
+        printf("\n===== MENU - ÁRVORE RUBRO-NEGRA =====\n");
+        printf("1 - Inserir elemento\n");
+        printf("2 - Remover elemento\n");
+        printf("3 - Ver árvore em ordem\n");
+        printf("4 - Sair\n");
+        printf("Escolha uma opção: ");
 
-        switch(opc) {
+        if (scanf("%d", &opcao) != 1) {
+            printf("Entrada inválida. Encerrando o programa.\n");
+            return 1;
+        }
+
+        switch (opcao) {
             case 1:
-                printf("Elemento a inserir:\n");
-                scanf("%d", &n);
-                insereNo(&arvore, NULL, &arvore, n);
+                printf("Elemento a inserir: ");
+                if (scanf("%d", &elemento) != 1) {
+                    printf("Entrada inválida.\n");
+                    return 1;
+                }
+
+                inserirNo(&arvore, NULL, &arvore, elemento);
+                printf("Elemento %d inserido.\n", elemento);
                 break;
 
             case 2:
-                printf("Elemento a remover:\n");
-                scanf("%d", &rn);
-                removeNo(&arvore, rn);
+                printf("Elemento a remover: ");
+                if (scanf("%d", &elemento) != 1) {
+                    printf("Entrada inválida.\n");
+                    return 1;
+                }
+
+                removerNo(&arvore, elemento);
+                printf("Operação de remoção do elemento %d concluída.\n", elemento);
                 break;
 
             case 3:
-                inOrder(arvore);
+                printf("\nPercurso em ordem da árvore:\n");
+                percorrerEmOrdem(arvore);
                 break;
 
             case 4:
-                flag = 0;
+                printf("Encerrando o programa.\n");
                 break;
 
             default:
                 printf("Opção inválida.\n");
         }
 
-        printf("==========\n");
-    } while (flag);
+        printf("=====================================\n");
+    } while (opcao != 4);
 
     return 0;
 }
