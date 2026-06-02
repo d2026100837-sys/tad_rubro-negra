@@ -1,41 +1,37 @@
-typedef struct TNoRB {
+#ifndef ARVORE_RUBRO_NEGRA_H
+#define ARVORE_RUBRO_NEGRA_H
+
+/*
+ * Estrutura de um nó da árvore rubro-negra.
+ * cor: PRETO = 0, VERMELHO = 1.
+ */
+#define PRETO 0
+#define VERMELHO 1
+
+typedef struct no_rubro_negro {
     int chave;
     int cor;
-    struct TNoRB *pai;
-    struct TNoRB *esq;
-    struct TNoRB *dir;
+    struct no_rubro_negro *pai;
+    struct no_rubro_negro *esq;
+    struct no_rubro_negro *dir;
 } TNoRB;
 
-void insereNo(TNoRB **arvore, TNoRB *pPai, TNoRB **pMain, int k);
+void inserirNo(TNoRB **arvore, TNoRB *pPai, TNoRB **pMain, int k);
+TNoRB *obterAvo(TNoRB *arvore);
+TNoRB *obterTio(TNoRB *arvore);
+void rotacionarDireita(TNoRB **no);
+void rotacionarEsquerda(TNoRB **no);
+void corrigirArvoreRubroNegra(TNoRB **arvore, TNoRB **pMain);
+void percorrerEmOrdem(TNoRB *raiz);
+void rotacaoDuplaEsquerda(TNoRB **no);
+void rotacaoDuplaDireita(TNoRB **no);
+void removerNo(TNoRB **arvore, int k);
+void tratarNoPretoIrmaoPretoFilhoVermelho(TNoRB *aRemover, TNoRB **arvore);
+void tratarNoPretoIrmaoPretoFilhoPreto(TNoRB *aRemover, TNoRB **arvore);
+void tratarNoPretoIrmaoVermelho(TNoRB *aRemover, TNoRB **arvore);
+TNoRB *buscarNo(TNoRB *arvore, int k);
+TNoRB *obterIrmao(TNoRB *pai, TNoRB *noAtual);
+int ehFilhoEsquerdo(TNoRB *arvore);
+TNoRB **maiorNaSubarvoreEsquerda(TNoRB **pMaiorNaSubarvoreEsquerda);
 
-TNoRB *avo(TNoRB *arvore);
-
-TNoRB *tio(TNoRB *arvore);
-
-void rotacaoDireita(TNoRB **no);
-
-void rotacaoEsquerda(TNoRB **no);
-
-void consertaRB(TNoRB **arvore, TNoRB **pMain);
-
-void inOrder(TNoRB *raiz);
-
-void dRotacaoDireita(TNoRB **no);
-
-void dRotacaoEsquerda(TNoRB **no);
-
-void removeNo(TNoRB **arvore, int k);
-
-void nBlackIBlackFRed(TNoRB *aRemover, TNoRB **arvore);
-
-void nBlackIBlackFBlack(TNoRB *aRemover, TNoRB **arvore);
-
-void nBlackIRed(TNoRB *aRemover, TNoRB **arvore);
-
-TNoRB *buscaNo(TNoRB *arvore, int k);
-
-TNoRB *irmao(TNoRB *pai, TNoRB *noAtual);
-
-int filhoEsquerdo(TNoRB *arvore);
-
-TNoRB **maiorEsq(TNoRB **pMaiorEsq);
+#endif
