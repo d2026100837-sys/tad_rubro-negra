@@ -1,262 +1,487 @@
 /*
-    Este código foi fornecido por
-    costheta_z
-*/
+ * Árvore Rubro-Negra para números inteiros.
+ *
+ * Código adaptado e padronizado em português a partir do projeto:
+ * https://github.com/othonalberto/redblack_tree
+ *
+ * Referência original: implementação de Red Black Tree desenvolvida por
+ * Othon Briganó e Pedro Warmling Botelho.
+ *
+ * Observação: esta versão mantém a lógica do código-base e traduz/padroniza
+ * nomes de funções, constantes e comentários para facilitar a apresentação
+ * didática em português.
+ */
 
-#include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
+#include <stdio.h>
+#include "arvore_rubro_negra.h"
 
-// Estrutura que representa cada nó
-// em uma árvore rubro-negra
-struct node {
-    int d; // dado
-    int c; // 1-vermelho, 0-preto
-    struct node* p; // pai
-    struct node* r; // filho direito
-    struct node* l; // filho esquerdo
-};
+#define PRETO 0
+#define VERMELHO 1
 
-// raiz global da árvore
-struct node* root = NULL;
+/*
+ * Insere uma nova chave na árvore seguindo a regra de inserção de uma ABB.
+ * Após inserir, a função de correção é chamada para restaurar as propriedades
+ * da árvore rubro-negra.
+ */
+void inserirNo(TNoRB **arvore, TNoRB *pPai, TNoRB **pMain, int k) {
+    assert(arvore);
 
-// função para realizar a inserção BST de um nó
-struct node* inserir_bst(struct node* trav, struct node* temp)
-{
-    // Se a árvore estiver vazia,
-    // retorna um novo nó
-    if (trav == NULL)
-        return temp;
+    if (*arvore == NULL) {
+        *arvore = (TNoRB*)malloc(sizeof(TNoRB));
+        if (*arvore == NULL) return;
 
-    // Caso contrário, percorre a árvore recursivamente
-    if (temp->d < trav->d) 
-    {
-        trav->l = inserir_bst(trav->l, temp);
-        trav->l->p = trav;
-    }
-    else if (temp->d > trav->d) 
-    {
-        trav->r = inserir_bst(trav->r, temp);
-        trav->r->p = trav;
-    }
+        (*arvore)->chave = k;
+        (*arvore)->cor = VERMELHO;
 
-    // Retorna o ponteiro do nó sem alterações
-    return trav;
-}
+        (*arvore)->esq = NULL;
+        (*arvore)->dir = NULL;
+        (*arvore)->pai = pPai;
+    } else {
 
-// Função que realiza rotação à direita
-// no nó passado como parâmetro
-void rotacao_direita(struct node* temp)
-{
-    struct node* left = temp->l;
-
-    temp->l = left->r;
-
-    if (temp->l)
-        temp->l->p = temp;
-
-    left->p = temp->p;
-
-    if (!temp->p)
-        root = left;
-    else if (temp == temp->p->l)
-        temp->p->l = left;
-    else
-        temp->p->r = left;
-
-    left->r = temp;
-    temp->p = left;
-}
-
-// Função que realiza rotação à esquerda
-// no nó passado como parâmetro
-void rotacao_esquerda(struct node* temp)
-{
-    struct node* right = temp->r;
-
-    temp->r = right->l;
-
-    if (temp->r)
-        temp->r->p = temp;
-
-    right->p = temp->p;
-
-    if (!temp->p)
-        root = right;
-    else if (temp == temp->p->l)
-        temp->p->l = right;
-    else
-        temp->p->r = right;
-
-    right->l = temp;
-    temp->p = right;
-}
-
-// Esta função corrige as violações
-// causadas pela inserção BST
-void corrigir_insercao(struct node* root, struct node* pt)
-{
-    struct node* parent_pt = NULL;
-    struct node* grand_parent_pt = NULL;
-
-    while ((pt != root) && (pt->c != 0)
-           && (pt->p->c == 1)) 
-    {
-        parent_pt = pt->p;
-        grand_parent_pt = pt->p->p;
-
-        /*
-            Caso A:
-            O pai de pt é filho esquerdo
-            do avô de pt
-        */
-        if (parent_pt == grand_parent_pt->l) 
-        {
-            struct node* uncle_pt = grand_parent_pt->r;
-
-            /*
-                Caso 1:
-                O tio de pt também é vermelho.
-                Apenas a troca de cores é necessária.
-            */
-            if (uncle_pt != NULL && uncle_pt->c == 1) 
-            {
-                grand_parent_pt->c = 1;
-                parent_pt->c = 0;
-                uncle_pt->c = 0;
-                pt = grand_parent_pt;
-            }
-            else 
-            {
-                /*
-                    Caso 2:
-                    pt é filho direito de seu pai.
-                    É necessária uma rotação à esquerda.
-                */
-                if (pt == parent_pt->r) {
-                    rotacao_esquerda(parent_pt);
-                    pt = parent_pt;
-                    parent_pt = pt->p;
-                }
-
-                /*
-                    Caso 3:
-                    pt é filho esquerdo de seu pai.
-                    É necessária uma rotação à direita.
-                */
-                rotacao_direita(grand_parent_pt);
-
-                int t = parent_pt->c;
-                parent_pt->c = grand_parent_pt->c;
-                grand_parent_pt->c = t;
-
-                pt = parent_pt;
-            }
+        if (k < (*arvore)->chave) {
+            inserirNo(&((*arvore)->esq), *arvore, pMain, k);
+            corrigirArvoreRubroNegra(&((*arvore)->esq), pMain);
+        } else if (k > (*arvore)->chave) {
+            inserirNo(&((*arvore)->dir), *arvore, pMain, k);
+            corrigirArvoreRubroNegra(&((*arvore)->dir), pMain);
         }
+    }
+    
+    if (*arvore == *pMain)
+            (*arvore)->cor = PRETO;
 
-        /*
-            Caso B:
-            O pai de pt é filho direito
-            do avô de pt
-        */
-        else 
-        {
-            struct node* uncle_pt = grand_parent_pt->l;
+}
 
-            /*
-                Caso 1:
-                O tio de pt também é vermelho.
-                Apenas a troca de cores é necessária.
-            */
-            if ((uncle_pt != NULL) && (uncle_pt->c == 1)) 
-            {
-                grand_parent_pt->c = 1;
-                parent_pt->c = 0;
-                uncle_pt->c = 0;
-                pt = grand_parent_pt;
-            }
-            else 
-            {
-                /*
-                    Caso 2:
-                    pt é filho esquerdo de seu pai.
-                    É necessária uma rotação à direita.
-                */
-                if (pt == parent_pt->l) {
-                    rotacao_direita(parent_pt);
-                    pt = parent_pt;
-                    parent_pt = pt->p;
+/*
+ * Retorna o avô de um nó, quando ele existir.
+ */
+TNoRB *obterAvo(TNoRB *arvore) {
+    if ((arvore != NULL) && (arvore->pai != NULL))
+            return (arvore->pai)->pai;
+    else
+        return NULL;
+}
+
+/*
+ * Retorna o tio de um nó, ou seja, o irmão do pai do nó.
+ */
+TNoRB *obterTio(TNoRB *arvore) {
+    TNoRB *nAvo = obterAvo(arvore);
+    if (nAvo == NULL) return NULL;
+
+    if (arvore->pai == nAvo->esq)
+        return nAvo->dir;
+    else
+        return nAvo->esq;
+
+}
+
+/*
+ * Executa uma rotação simples à direita a partir do nó informado.
+ * A rotação é usada para corrigir violações de balanceamento.
+ */
+void rotacionarDireita(TNoRB **no) {
+    assert(no);
+
+    if (*no == NULL) return;
+
+    TNoRB *aux = *no;
+    *no = aux->esq;
+    aux->esq = (*no)->dir;
+    (*no)->dir = aux;
+
+    (*no)->pai = aux->pai;
+    if(aux->dir != NULL)
+        (aux->dir)->pai = aux;
+
+    aux->pai = *no;
+
+    aux->cor = VERMELHO;
+    (*no)->cor = PRETO;
+
+}
+
+/*
+ * Executa uma rotação simples à esquerda a partir do nó informado.
+ * A rotação é usada para corrigir violações de balanceamento.
+ */
+void rotacionarEsquerda(TNoRB **no) {
+    assert(no);
+
+    if (*no == NULL) return;
+
+    TNoRB *aux = *no;
+    *no = aux->dir;
+    aux->dir = (*no)->esq;
+    (*no)->esq = aux;
+
+    (*no)->pai = aux->pai;
+    if (aux->esq != NULL)
+        (aux->esq)->pai = aux;
+
+    aux->pai = *no;
+ 
+    aux->cor = VERMELHO;
+    (*no)->cor = PRETO;
+}
+
+/*
+ * Corrige a árvore após uma inserção.
+ * Trata os casos de pai vermelho, tio vermelho, rotações simples e rotações duplas.
+ */
+void corrigirArvoreRubroNegra(TNoRB **arvore, TNoRB **pMain) {
+    assert(arvore);
+
+    TNoRB *nAvo = NULL;
+    TNoRB *nTio = NULL;
+
+    if((*arvore)->pai != NULL) {
+        if((*arvore)->pai->cor == PRETO) return;
+
+        if((*arvore)->cor == VERMELHO) {
+            nTio = obterTio(*arvore); 
+            if (nTio != NULL && nTio->cor == VERMELHO) {
+                nAvo = obterAvo(*arvore);
+                (*arvore)->pai->cor = PRETO;
+                nTio->cor = PRETO;
+                if (nAvo->pai != NULL) {
+                    nAvo->cor = VERMELHO;
+                } 
+            } else {
+                nAvo = obterAvo(*arvore);
+                if (nAvo != NULL) {
+                    if ((*arvore)->pai == nAvo->esq) { // caso em que o pai é filho esquerdo do avô
+                        if ((*arvore) == (nAvo->esq)->esq) {
+                            if (nAvo->pai != NULL) {
+                                if ((nAvo->pai)->esq == nAvo)
+                                    rotacionarDireita(&((nAvo->pai)->esq));
+                                else
+                                    rotacionarDireita(&((nAvo->pai)->dir));
+                            } else {
+                                rotacionarDireita(pMain);
+                            }
+
+
+                       } else {
+                           if (nAvo->pai != NULL) {
+                               if ((nAvo->pai)->esq == nAvo) {
+                                    rotacaoDuplaDireita(&((nAvo->pai)->esq));
+                               } else
+                                   rotacaoDuplaDireita(&((nAvo->pai)->dir));
+                           } else { 
+                                rotacaoDuplaDireita(pMain);
+                           }
+                      }
+                   } else { 
+                       if ((*arvore) == ((nAvo->dir)->dir)) {
+                           if (nAvo->pai != NULL) {
+                               if (((nAvo->pai)->esq) == nAvo) {
+                                    rotacionarEsquerda(&((nAvo->pai)->esq));
+                               } else
+                                   rotacionarEsquerda(&((nAvo->pai)->dir));
+                           } else {
+                                rotacionarEsquerda(pMain);
+                           }
+
+                       } else {
+                           if (nAvo->pai != NULL) {
+                               if((nAvo->pai)->esq == nAvo) {
+                                    rotacaoDuplaEsquerda(&((nAvo->pai)->esq));
+                               } else {
+                                   rotacaoDuplaEsquerda(&((nAvo->pai)->dir));
+                               }
+                           } else {
+                                    rotacaoDuplaEsquerda(pMain);
+                           }
+                       }
                 }
-
-                /*
-                    Caso 3:
-                    pt é filho direito de seu pai.
-                    É necessária uma rotação à esquerda.
-                */
-                rotacao_esquerda(grand_parent_pt);
-
-                int t = parent_pt->c;
-                parent_pt->c = grand_parent_pt->c;
-                grand_parent_pt->c = t;
-
-                pt = parent_pt;
+                }
             }
         }
     }
 }
+    
 
-// Função para imprimir o percurso em ordem
-// da árvore já corrigida
-void percurso_em_ordem(struct node* trav)
-{
-    if (trav == NULL)
-        return;
+/*
+ * Percorre a árvore em ordem: esquerda, raiz e direita.
+ * Em uma árvore de busca, esse percurso imprime as chaves em ordem crescente.
+ */
+void percorrerEmOrdem(TNoRB *raiz) {
+    if (raiz == NULL) return;
 
-    percurso_em_ordem(trav->l);
-    printf("%d ", trav->d);
-    percurso_em_ordem(trav->r);
+    percorrerEmOrdem(raiz->esq);
+    printf("Endereço: %p\nChave: %d, Cor: %d\nPai: %p\nFilho esquerdo: %p\nFilho direito: %p\n\n", raiz, raiz->chave, raiz->cor, raiz->pai, raiz->esq, raiz->dir);
+    percorrerEmOrdem(raiz->dir);
 }
 
-// código principal
-int main()
-{
-    int n = 7;
-    int a[7] = { 7, 6, 5, 4, 3, 2, 1 };
+/*
+ * Executa rotação dupla à esquerda.
+ * Primeiro faz uma rotação à direita no filho direito; depois, uma rotação à esquerda no nó atual.
+ */
+void rotacaoDuplaEsquerda(TNoRB **no) {
+    assert(no);
 
-    for (int i = 0; i < n; i++) {
+    rotacionarDireita(&((*no)->dir));
+    rotacionarEsquerda(no);
 
-        /*
-            Aloca memória para o nó e inicializa:
-            1. cor como vermelho;
-            2. ponteiros pai, esquerdo e direito como NULL;
-            3. dado como o i-ésimo valor do vetor.
-        */
-        struct node* temp
-            = (struct node*)malloc(sizeof(struct node));
+}
 
-        temp->r = NULL;
-        temp->l = NULL;
-        temp->p = NULL;
-        temp->d = a[i];
-        temp->c = 1;
+/*
+ * Executa rotação dupla à direita.
+ * Primeiro faz uma rotação à esquerda no filho esquerdo; depois, uma rotação à direita no nó atual.
+ */
+void rotacaoDuplaDireita(TNoRB **no) {
+    assert(no);
 
-        /*
-            Chama a função que realiza a inserção BST
-            do nó recém-criado
-        */
-        root = inserir_bst(root, temp);
+    rotacionarEsquerda(&((*no)->esq));
+    rotacionarDireita(no);
+}
 
-        /*
-            Chama a função que preserva as propriedades
-            da árvore rubro-negra
-        */
-        corrigir_insercao(root, temp);
+/*
+ * Remove um nó da árvore a partir da chave informada.
+ * Quando necessário, aciona os tratamentos de remoção para preservar as propriedades rubro-negras.
+ */
+void removerNo(TNoRB **arvore, int k){
+    assert(arvore);
 
-        // A raiz da árvore sempre deve ser preta
-        root->c = 0;
+    if((*arvore) == NULL) return;
+
+    TNoRB *aRemover = *arvore;
+
+    aRemover = buscarNo(aRemover, k);
+
+    if(aRemover == NULL) return;
+
+    if(aRemover->dir == NULL && aRemover->esq == NULL){
+        if(aRemover->pai == NULL){
+            free(aRemover);
+            *arvore = NULL;
+            return;
+        } else {
+            if(aRemover->cor == VERMELHO && aRemover->dir == NULL && aRemover->esq == NULL){
+                if(ehFilhoEsquerdo(aRemover) == 1){
+                    free(aRemover);
+                    aRemover->pai->esq = NULL;
+                } else {
+                    free(aRemover);
+                    aRemover->pai->dir = NULL;
+                }
+                return;
+            } else {
+                TNoRB *nIrmao = obterIrmao(aRemover->pai,aRemover);
+                    if(nIrmao == NULL) return;
+
+                if(aRemover->cor == PRETO && nIrmao->cor == PRETO){
+                    if(nIrmao->dir == NULL && nIrmao->esq == NULL){
+                        tratarNoPretoIrmaoPretoFilhoPreto(aRemover, arvore);
+                        return;
+                    } else if(nIrmao->esq->cor == PRETO && nIrmao->dir->cor == PRETO){
+                        tratarNoPretoIrmaoPretoFilhoPreto(aRemover, arvore);
+                        return;
+                    }
+                    else if(nIrmao->dir->cor == PRETO && nIrmao->esq == NULL){
+                        tratarNoPretoIrmaoPretoFilhoPreto(aRemover, arvore);
+                        return;
+                    }
+                    else if(nIrmao->esq->cor == PRETO && nIrmao->dir == NULL){
+                        tratarNoPretoIrmaoPretoFilhoPreto(aRemover, arvore);
+                        return;
+                    }
+                } else if(aRemover->cor == PRETO && nIrmao->cor == PRETO && (nIrmao->esq->cor == VERMELHO || nIrmao->dir->cor == VERMELHO)){
+                    if(nIrmao->esq != NULL){
+                        tratarNoPretoIrmaoPretoFilhoVermelho(aRemover, arvore);
+                        return;
+                    } else if (nIrmao->dir != NULL){
+                        tratarNoPretoIrmaoPretoFilhoVermelho(aRemover, arvore);
+                        return;
+                    }
+                } else if(aRemover->cor == PRETO && nIrmao->cor == VERMELHO){
+                    tratarNoPretoIrmaoVermelho(aRemover, arvore);
+                }
+            }
+
+            return;
+        }
+    } else if (aRemover->dir == NULL || aRemover->esq == NULL){
+        if(aRemover->dir != NULL){
+            aRemover->chave = aRemover->dir->chave;
+            free(aRemover->dir);
+            aRemover->dir = NULL;
+        } else {
+            aRemover->chave = aRemover->esq->chave;
+            free(aRemover->esq);
+            aRemover->esq = NULL;
+        }
+    } else {
+        TNoRB **nSubstituto = maiorNaSubarvoreEsquerda(&(aRemover->esq));
+        TNoRB *auxSubstituto = *nSubstituto;
+
+        aRemover->chave = (*nSubstituto)->chave;
+        (*nSubstituto)->pai->esq = (*nSubstituto)->esq;
+
+
+        if(aRemover->cor == VERMELHO){
+            if(aRemover->esq == NULL && aRemover == aRemover->pai->esq && (aRemover->dir->dir != NULL || aRemover->dir->esq != NULL)){
+                if(aRemover->dir->dir != NULL){
+                    rotacionarDireita(&(aRemover->esq));
+                    rotacionarEsquerda(&aRemover);
+                }
+                if(aRemover->dir->esq != NULL){
+                    rotacionarDireita(&(aRemover->dir));
+                    rotacionarEsquerda(&aRemover);
+                }
+            } else if(aRemover->esq == NULL && aRemover == aRemover->pai->dir && (aRemover->esq->dir != NULL || aRemover->esq->esq != NULL)){
+                if(aRemover->esq->dir != NULL){
+                    rotacionarEsquerda(&(aRemover->esq));
+                    rotacionarDireita(&aRemover);
+                }
+                if(aRemover->esq->esq != NULL){
+                    rotacionarEsquerda(&(aRemover->esq));
+                    rotacionarDireita(&aRemover);
+                }
+            }
+
+            aRemover->cor = PRETO;
+            if(aRemover->esq != NULL)
+                aRemover->esq->cor = VERMELHO;
+            if(aRemover->dir != NULL)
+                aRemover->dir->cor = VERMELHO;
+        }
+        free(auxSubstituto);
+    }
+}
+
+/*
+ * Trata o caso de remoção em que o nó removido é preto,
+ * o irmão é preto e há filho vermelho disponível para rotação/recoloração.
+ */
+void tratarNoPretoIrmaoPretoFilhoVermelho(TNoRB *aRemover, TNoRB **arvore){
+    assert(arvore);
+
+    TNoRB *paiARemover = aRemover->pai;
+
+    if(ehFilhoEsquerdo(aRemover) == 1){
+        free(aRemover);
+        aRemover->pai->esq = NULL;
+    } else {
+        free(aRemover);
+        aRemover->pai->dir = NULL;
     }
 
-    printf("Percurso em ordem da árvore criada\n");
-    percurso_em_ordem(root);
+    if(paiARemover->esq == NULL){
+        if(paiARemover->pai == NULL){
+            if((paiARemover->dir)->dir == NULL){
+                rotacionarDireita(&((*arvore)->dir));
+            }
+            rotacionarEsquerda(arvore);
+        } 
+        else {
+            if((paiARemover->dir)->dir == NULL){
+                rotacionarDireita(&(paiARemover->dir));
+            }
+            rotacionarEsquerda(&paiARemover);
+        }
+    } 
+    else {
+        if(paiARemover->pai == NULL){
+            if((paiARemover->esq)->esq == NULL){
+                rotacionarEsquerda(&((*arvore)->esq));
+            }
+            rotacionarDireita(arvore);
+        } else {
+            if((paiARemover->dir)->dir == NULL){
+                rotacionarEsquerda(&(paiARemover->esq));
+            }
+            rotacionarDireita(&paiARemover);
+        }
+    }
+    return;
+}
 
-    return 0;
+/*
+ * Trata o caso de remoção em que o nó removido é preto,
+ * o irmão é preto e os filhos relevantes também são pretos ou nulos.
+ */
+void tratarNoPretoIrmaoPretoFilhoPreto(TNoRB *aRemover, TNoRB **arvore){
+    assert(arvore);
+
+    TNoRB *paiARemover = aRemover->pai;
+    TNoRB *nIrmao = obterIrmao(paiARemover, aRemover);
+
+    tratarNoPretoIrmaoVermelho(aRemover, arvore);
+
+    paiARemover->cor = PRETO;
+    nIrmao->cor = VERMELHO;
+}
+
+/*
+ * Trata o caso de remoção em que o nó removido é preto e o irmão é vermelho.
+ */
+void tratarNoPretoIrmaoVermelho(TNoRB *aRemover, TNoRB **arvore){
+    assert(arvore);
+
+    TNoRB *paiARemover = aRemover->pai;
+
+    tratarNoPretoIrmaoPretoFilhoVermelho(aRemover,arvore);
+
+    paiARemover->cor = PRETO;
+    if(paiARemover->esq != NULL)
+        (paiARemover->esq)->cor = VERMELHO;
+    if(paiARemover->dir != NULL)
+        (paiARemover->dir)->cor = VERMELHO;
+}
+
+/*
+ * Busca uma chave na árvore rubro-negra.
+ * Retorna o ponteiro para o nó encontrado ou NULL caso a chave não exista.
+ */
+TNoRB *buscarNo(TNoRB *arvore, int k){
+    if (arvore == NULL) return NULL;
+
+    if (arvore->chave == k) return arvore;
+
+    if (k < arvore->chave)
+        return buscarNo(arvore->esq, k);
+    else
+        return buscarNo(arvore->dir, k);
+}
+
+/*
+ * Retorna o irmão de um nó com base no ponteiro para o pai.
+ */
+TNoRB *obterIrmao(TNoRB *pai, TNoRB *noAtual){
+    if(pai == NULL) return NULL;
+
+    if(pai->dir->chave == noAtual->chave)
+        return pai->esq;
+    else
+        return pai->dir;
+}
+
+/*
+ * Verifica se o nó informado é filho esquerdo de seu pai.
+ * Retorna 1 para verdadeiro e 0 para falso.
+ */
+int ehFilhoEsquerdo(TNoRB *arvore){
+    if(arvore->pai->esq == arvore)
+        return 1;
+    else
+        return 0;
+}
+
+/*
+ * Retorna o maior nó da subárvore esquerda.
+ * Esse nó é usado como substituto durante a remoção de um nó com dois filhos.
+ */
+TNoRB **maiorNaSubarvoreEsquerda(TNoRB **pMaiorEsq){
+    assert(pMaiorEsq);
+    
+    if (*pMaiorEsq == NULL) return NULL;
+
+    if ((*pMaiorEsq)->dir == NULL)
+        return pMaiorEsq;
+    else
+        return maiorNaSubarvoreEsquerda(&((*pMaiorEsq)->dir));
 }
